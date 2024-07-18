@@ -15,6 +15,7 @@ public class Plugin : BaseUnityPlugin
 {
     internal static new ManualLogSource Logger;
 
+    private string videoPath = Path.Combine(Paths.PluginPath, "TitleVideos");
     private ConfigEntry<bool> configPlayAudio;
         
     private void Awake()
@@ -22,6 +23,11 @@ public class Plugin : BaseUnityPlugin
         // Plugin startup logic
         Logger = base.Logger;
         SceneManager.sceneLoaded += OnSceneLoaded;
+
+        if (!Directory.Exists(videoPath))
+        {
+            Directory.CreateDirectory(videoPath);
+        }
 
         configPlayAudio = Config.Bind("General",
                                 "PlayAudio",
@@ -79,7 +85,6 @@ public class Plugin : BaseUnityPlugin
 
     private string PickRandomVideo()
     {
-        string videoPath = Path.Combine(Paths.PluginPath, "LC_TitleVideos", "Videos");
         if (Directory.Exists(videoPath))
         {
             DirectoryInfo d = new DirectoryInfo(videoPath);
