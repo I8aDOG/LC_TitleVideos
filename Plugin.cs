@@ -7,6 +7,7 @@ using UnityEngine.Video;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using Mono.Cecil.Cil;
+using System.Collections.Generic;
 
 namespace LC_TitleVideos;
 
@@ -89,12 +90,20 @@ public class Plugin : BaseUnityPlugin
 
     private string PickRandomVideo()
     {
-        if (Directory.Exists(videoPath))
+        string[] dirs = Directory.GetDirectories(Paths.BepInExRootPath, "TitleVideos", SearchOption.AllDirectories);
+        List<FileInfo> infos = new List<FileInfo>();
+
+        foreach (string dir in dirs)
         {
-            DirectoryInfo d = new DirectoryInfo(videoPath);
-            FileInfo[] f = d.GetFiles();
-            return f[Random.Range(0, f.Length)].FullName;
+            DirectoryInfo d = new DirectoryInfo(dir);
+            foreach (FileInfo f in d.GetFiles())
+            {
+                infos.Add(f);
+            }
         }
+
+        if (infos.Count > 0)
+            return infos[Random.Range(0, infos.Count)].FullName;
 
         return "";
     }
