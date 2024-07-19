@@ -15,7 +15,7 @@ public class Plugin : BaseUnityPlugin
 {
     internal static new ManualLogSource Logger;
 
-    private string videoPath = Path.Combine(Paths.PluginPath, "TitleVideos");
+    private string videoPath = Path.Combine(Paths.PluginPath, "NotCasey-LC_TitleVideos", "TitleVideos");
     private ConfigEntry<bool> configPlayAudio;
         
     private void Awake()
@@ -26,11 +26,7 @@ public class Plugin : BaseUnityPlugin
 
         if (!Directory.Exists(videoPath))
         {
-            string altPath = Path.Combine(Paths.PluginPath, "NotCasey-LC_TitleVideos", "TitleVideos");
-            if (!Directory.Exists(altPath))
-                Directory.CreateDirectory(videoPath);
-            else
-                videoPath = altPath;
+            Directory.CreateDirectory(videoPath);
         }
 
         configPlayAudio = Config.Bind("General",
