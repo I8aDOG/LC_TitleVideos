@@ -26,7 +26,11 @@ public class Plugin : BaseUnityPlugin
 
         if (!Directory.Exists(videoPath))
         {
-            Directory.CreateDirectory(videoPath);
+            string altPath = Path.Combine(Paths.PluginPath, "NotCasey-LC_TitleVideos", "TitleVideos");
+            if (!Directory.Exists(altPath))
+                Directory.CreateDirectory(videoPath);
+            else
+                videoPath = altPath;
         }
 
         configPlayAudio = Config.Bind("General",
