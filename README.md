@@ -1,7 +1,7 @@
 # LC_TitleVideos
 
 Adds videos to the background of the Lethal Company title screen.
-Custom videos can be added in "BepInEx/plugins/TitleVideos" folder.
+Custom videos can be added in "BepInEx/plugins/NotCasey-LC_TitleVideos/TitleVideos" folder.
 
 If you have an issue with the mod, submit it on the GitHub issues.
 
