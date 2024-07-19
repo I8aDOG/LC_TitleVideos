@@ -26,7 +26,11 @@ public class Plugin : BaseUnityPlugin
 
         if (!Directory.Exists(videoPath))
         {
-            Directory.CreateDirectory(videoPath);
+            string altPath = Path.Combine(Paths.PluginPath, "TitleVideos");
+            if (!Directory.Exists(altPath))
+                Directory.CreateDirectory(altPath);
+            else
+                videoPath = altPath;
         }
 
         configPlayAudio = Config.Bind("General",
