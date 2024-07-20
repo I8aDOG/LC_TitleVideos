@@ -8,6 +8,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using Mono.Cecil.Cil;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LC_TitleVideos;
 
@@ -16,28 +17,33 @@ public class Plugin : BaseUnityPlugin
 {
     internal static new ManualLogSource Logger;
 
-    private string videoPath = Path.Combine(Paths.PluginPath, "NotCasey-LC_TitleVideos", "TitleVideos");
     private ConfigEntry<bool> configPlayAudio;
-        
+    private ConfigEntry<bool> configPlayDefaultVideos;
+    private ConfigEntry<int> configLoopCount;
+
+    private bool hasMultipleClips = false;
+    private int loopCount = 0;
+
     private void Awake()
     {
         // Plugin startup logic
         Logger = base.Logger;
         SceneManager.sceneLoaded += OnSceneLoaded;
 
-        if (!Directory.Exists(videoPath))
-        {
-            string altPath = Path.Combine(Paths.PluginPath, "TitleVideos");
-            if (!Directory.Exists(altPath))
-                Directory.CreateDirectory(altPath);
-            else
-                videoPath = altPath;
-        }
-
         configPlayAudio = Config.Bind("General",
                                 "PlayAudio",
                                 false,
                                 "Plays the audio of the background videos.");
+
+        configPlayDefaultVideos = Config.Bind("General",
+                                "PlayDefaultVideos",
+                                true,
+                                "Plays any built-in videos in 'DefaultTitleVideos' folders.");
+
+        configLoopCount = Config.Bind("General",
+                                "LoopCount",
+                                -1,
+                                "Amount of times to loop videos before changing to a different one, set to -1 to disable alternating videos.");
 
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
     }
@@ -46,6 +52,9 @@ public class Plugin : BaseUnityPlugin
     {
         if (scene.name.StartsWith("MainMenu"))
         {
+            loopCount = 0;
+            hasMultipleClips = false;
+
             GameObject mainButtons = GameObject.Find("MenuContainer");
             if (mainButtons != null)
             {
@@ -60,10 +69,11 @@ public class Plugin : BaseUnityPlugin
                 // player.clip = clip;
                 player.url = PickRandomVideo();
                 player.targetTexture = texture;
-                player.isLooping = true;
+                player.isLooping = configLoopCount.Value <= -1;
                 player.audioOutputMode = VideoAudioOutputMode.AudioSource;
                 player.SetTargetAudioSource(0, audioSource);
                 player.aspectRatio = VideoAspectRatio.FitInside;
+                player.loopPointReached += OnLoopPointReached;
                 player.Play();
 
                 playerGO.transform.localPosition = new Vector3(0f, 0f, 0f);
@@ -88,9 +98,37 @@ public class Plugin : BaseUnityPlugin
         }
     }
 
+    private void OnLoopPointReached(VideoPlayer vp)
+    {
+        if (configLoopCount.Value <= -1) return;
+
+        loopCount++;
+        if (loopCount <= configLoopCount.Value)
+        {
+            vp.Play();
+            return;
+        }
+
+        string clip = vp.url;
+        while (clip == vp.url && hasMultipleClips)
+        {
+            clip = PickRandomVideo();
+        }
+
+        loopCount = 0;
+
+        vp.url = clip;
+        vp.Play();
+    }
+
     private string PickRandomVideo()
     {
         string[] dirs = Directory.GetDirectories(Paths.BepInExRootPath, "TitleVideos", SearchOption.AllDirectories);
+        if (configPlayDefaultVideos.Value)
+        {
+            dirs = Directory.GetDirectories(Paths.BepInExRootPath, "DefaultTitleVideos", SearchOption.AllDirectories).Concat(dirs).ToArray();
+        }
+
         List<FileInfo> infos = new List<FileInfo>();
 
         foreach (string dir in dirs)
@@ -101,6 +139,8 @@ public class Plugin : BaseUnityPlugin
                 infos.Add(f);
             }
         }
+
+        hasMultipleClips = infos.Count > 1;
 
         if (infos.Count > 0)
             return infos[Random.Range(0, infos.Count)].FullName;
