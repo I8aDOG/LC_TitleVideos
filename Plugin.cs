@@ -19,6 +19,7 @@ public class Plugin : BaseUnityPlugin
 
     private ConfigEntry<bool> configPlayAudio;
     private ConfigEntry<bool> configPlayDefaultVideos;
+    private ConfigEntry<bool> configPlaySequentially;
     private ConfigEntry<int> configLoopCount;
 
     private bool hasMultipleClips = false;
@@ -39,6 +40,11 @@ public class Plugin : BaseUnityPlugin
                                 "PlayDefaultVideos",
                                 true,
                                 "Plays any built-in videos in 'DefaultTitleVideos' folders.");
+
+        configPlaySequentially  = Config.Bind("General",
+                                "PlaySequentially",
+                                false,
+                                "Plays the videos sequentially in alphabetical order. Keep false if you want to play videos in random order.");
 
         configLoopCount = Config.Bind("General",
                                 "LoopCount",
@@ -110,9 +116,17 @@ public class Plugin : BaseUnityPlugin
         }
 
         string clip = vp.url;
-        while (clip == vp.url && hasMultipleClips)
+
+        if (configPlaySequentially.Value)
         {
-            clip = PickRandomVideo();
+            clip = GetNextVideo(clip);
+        }
+        else
+        {
+            while (clip == vp.url && hasMultipleClips)
+            {
+                clip = PickRandomVideo();
+            }
         }
 
         loopCount = 0;
@@ -125,9 +139,7 @@ public class Plugin : BaseUnityPlugin
     {
         string[] dirs = Directory.GetDirectories(Paths.BepInExRootPath, "TitleVideos", SearchOption.AllDirectories);
         if (configPlayDefaultVideos.Value)
-        {
             dirs = Directory.GetDirectories(Paths.BepInExRootPath, "DefaultTitleVideos", SearchOption.AllDirectories).Concat(dirs).ToArray();
-        }
 
         List<FileInfo> infos = new List<FileInfo>();
 
@@ -145,6 +157,38 @@ public class Plugin : BaseUnityPlugin
         if (infos.Count > 0)
             return infos[Random.Range(0, infos.Count)].FullName;
 
+        return "";
+    }
+
+    private string GetNextVideo(string currentUrl)
+    {
+        string[] dirs = Directory.GetDirectories(Paths.BepInExRootPath, "TitleVideos", SearchOption.AllDirectories);
+        if (configPlayDefaultVideos.Value)
+            dirs = Directory.GetDirectories(Paths.BepInExRootPath, "DefaultTitleVideos", SearchOption.AllDirectories).Concat(dirs).ToArray();
+
+        List<FileInfo> infos = new List<FileInfo>();
+        int index = -1;
+
+        foreach (string dir in dirs)
+        {
+            DirectoryInfo d = new DirectoryInfo(dir);
+            foreach (FileInfo f in d.GetFiles())
+            {
+                infos.Add(f);
+
+                if (f.FullName == currentUrl)
+                    index = infos.IndexOf(f);
+            }
+        }
+
+        hasMultipleClips = infos.Count > 1;
+
+        index++;
+        if (index < infos.Count)
+            return infos[index].FullName;
+        else if (infos.Count > 0)
+            return infos[0].FullName;
+        
         return "";
     }
 }
